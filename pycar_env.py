@@ -1,6 +1,7 @@
 import pygame as pg
 from random import randint
-
+import PIL.Image as Image
+import numpy as np
 
 
 class PyCar():
@@ -152,6 +153,9 @@ class PyCar():
                 break
 
             pg.display.update()
+            pg.image.save(self.screen, "screenshot.jpeg")
+            img = np.array(Image.open("screenshot.jpeg"))
+            #print(img.shape)
 
         pg.quit()
 
