@@ -2,6 +2,7 @@ import pygame as pg
 from random import randint
 import PIL.Image as Image
 import numpy as np
+import time
 
 
 class PyCar():
@@ -46,6 +47,8 @@ class PyCar():
         'PLAYER'
         self.player_x, self.player_y = int(self.wid / 2), int(self.hei - 50)
         self.player_spd = 5
+        self.player_spd_x = self.player_spd #85
+        self.player_spd_y = self.player_spd #20
 
         'ENEMIES'
         self.enemies_x = int(self.wid / 2) 
@@ -79,124 +82,162 @@ class PyCar():
         self.score_spd = 0
         self.prev_lane = "center"
 
+    def get_keyboard(self):
+        return pg.key.get_pressed()
+
+    def step(self, action):
+        # actions:
+        # 0 --> Nothing
+        # 1 --> Up
+        # 2 --> Down
+        # 3 --> Left
+        # 4 --> Right
+        
+        collision = False
+
+        self.clock.tick(60)
+        # bg_y = 0
+        # --- Faz com que a imagem de background se repita, deslizando de cima para baixo --- #
+        bg_y1 = self.bg_y % self.bg.get_height()
+        self.bg_y += 3
+        self.screen.blit(self.bg, (0, bg_y1 - self.bg.get_height()))
+        if bg_y1 < self.hei:
+            self.screen.blit(self.bg, (0, bg_y1))
+
+        self.player()
+        self.enemies()
+
+        #pg.draw.rect(self.screen, self.white, (0, 0, 54, 20))
+        #self.text('S: ' + str(self.score), self.black, 15, 0, 0)
+
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                main = False
+
+        'CONTROLS'
+        
+        if action == 4: #and self.player_x <= 290:
+            self.player_x += self.player_spd_x
+        if action == 3: # and self.player_x >= 110:
+            self.player_x -= self.player_spd_x
+        if action == 1 and self.player_y >= int(self.car_y/2) + 50:
+            self.player_y -= self.player_spd_y
+        if action == 0 and self.player_y <= int(self.hei - 50):
+            self.player_y += self.player_spd_y
+        else:
+            pass
+
+        if self.player_x > 290:
+            collision = True
+        elif self.player_x < 110:
+            collision = True
+
+        'ENEMIES SPEED'
+        self.enemy1_y += self.enemies_spd + 5
+        self.enemy2_y += self.enemies_spd + 2
+        self.enemy3_y += self.enemies_spd + 4
+
+        # --- Os inimigos aparecem, aleatoriamente, fora do background após sair do mesmo --- #
+        if self.enemy1_y > self.hei:
+            self.enemy1_y = randint(-2500, - 2000)
+        if self.enemy2_y > self.hei:
+            self.enemy2_y = randint(-1000, -750)
+        if self.enemy3_y > self.hei:
+            self.enemy3_y = randint(-1750, -1250)
+
+        # 'SCORE'
+        # if self.score_spd <= 60:
+        #     self.score_spd += 1
+        # else:
+        #     self.score += 1
+        #     self.score_spd = 0
+
+        'COLLISION'
+        if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  # Lado direito.
+            print("Enemy 3 collision")
+            # self.car_collision.play()
+            collision = True
+            # self.score -= 10
+            self.enemy3_y = randint(-1750, -1250)
+        if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  # Lado esquerdo.
+            print("Enemy 1 collision")
+            # self.car_collision.play()
+            collision = True
+            # self.score -= 10
+            self.enemy1_y = randint(-2500, - 2000)
+        if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 :  # Centro.
+            print("Enemy 2 collision")
+            #if player_x + 40 > enemies_x - 10 and abs(player_y - enemy2_y) < 50:
+            # self.car_collision.play()
+            collision = True
+            # self.score -= 10
+            self.enemy2_y = randint(-1000, -750)
+        
+        'LANE'
+        ##action 3 is left and action 4 is right
+        action = 4 ##NEED TO FIX THIS
+
+        
+        lane_changed = False
+        if  self.prev_lane == "center" and (action == 3 or action == 4): 
+            if abs(self.player_x-int(self.wid / 2)) > 75 and abs(self.player_x-int(self.wid / 2)) < 110:
+                lane_changed = True
+        elif self.prev_lane == "left":
+            #if action == 3:
+            #    collision = True
+            if action == 4 and abs(self.player_x-int(self.wid / 2)) < 15:
+                lane_changed = True
+            else:
+                pass
+        elif self.prev_lane == "right":
+            #if action == 4:
+            #    collision = True
+            if action == 3 and abs(self.player_x-int(self.wid / 2)) < 15:
+                lane_changed = True
+            else:
+                pass
+        else:
+            pass    
+
+        if lane_changed:
+            self.prev_lane = self.get_current_lane()
+            # print(prev_lane) 
+
+        'NEW SCORE'
+        reward = self.get_reward(collision, lane_changed, None)
+        self.score += reward
+        # print(self.score)
+        done = False
+        if self.score < 0 or collision:
+            done = True
+
+        pg.display.update()
+        pg.image.save(self.screen, "screenshot.jpeg")
+        img = np.array(Image.open("screenshot.jpeg"))
+        #print(img.shape)
+        return img, reward, done
+
+
+
     def run_game(self, keyboard=True):
         main = True
         while main:
-            self.clock.tick(60)
-            # bg_y = 0
-            # --- Faz com que a imagem de background se repita, deslizando de cima para baixo --- #
-            bg_y1 = self.bg_y % self.bg.get_height()
-            self.bg_y += 3
-            self.screen.blit(self.bg, (0, bg_y1 - self.bg.get_height()))
-            if bg_y1 < self.hei:
-                self.screen.blit(self.bg, (0, bg_y1))
-
-            self.player()
-            self.enemies()
-
-            pg.draw.rect(self.screen, self.white, (0, 0, 54, 20))
-            self.text('S: ' + str(self.score), self.black, 15, 0, 0)
-
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    main = False
-
-            'CONTROLS'
+            done = False
             if keyboard:
-                arrows = pg.key.get_pressed()
-                if arrows[pg.K_RIGHT] and self.player_x <= 290:
-                    self.player_x += self.player_spd
-                if arrows[pg.K_LEFT] and self.player_x >= 110:
-                    self.player_x -= self.player_spd
-                if arrows[pg.K_UP] and self.player_y >= int(self.car_y/2) + 50:
-                    self.player_y -= self.player_spd
-                if arrows[pg.K_DOWN] and self.player_y <= int(self.hei - 50):
-                    self.player_y += self.player_spd
-            else:
-                pass
-
-            'ENEMIES SPEED'
-            self.enemy1_y += self.enemies_spd + 5
-            self.enemy2_y += self.enemies_spd + 2
-            self.enemy3_y += self.enemies_spd + 4
-
-            # --- Os inimigos aparecem, aleatoriamente, fora do background após sair do mesmo --- #
-            if self.enemy1_y > self.hei:
-                self.enemy1_y = randint(-2500, - 2000)
-            if self.enemy2_y > self.hei:
-                self.enemy2_y = randint(-1000, -750)
-            if self.enemy3_y > self.hei:
-                self.enemy3_y = randint(-1750, -1250)
-
-            # 'SCORE'
-            # if self.score_spd <= 60:
-            #     self.score_spd += 1
-            # else:
-            #     self.score += 1
-            #     self.score_spd = 0
-
-            'COLLISION'
-            collision = False
-            if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  # Lado direito.
-                print("Enemy 3 collision")
-                # self.car_collision.play()
-                collision = True
-                # self.score -= 10
-                self.enemy3_y = randint(-1750, -1250)
-            if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  # Lado esquerdo.
-                print("Enemy 1 collision")
-                # self.car_collision.play()
-                collision = True
-                # self.score -= 10
-                self.enemy1_y = randint(-2500, - 2000)
-            if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 :  # Centro.
-                print("Enemy 2 collision")
-                #if player_x + 40 > enemies_x - 10 and abs(player_y - enemy2_y) < 50:
-                # self.car_collision.play()
-                collision = True
-                # self.score -= 10
-                self.enemy2_y = randint(-1000, -750)
-            
-            'LANE'
-            ##action 3 is left and action 4 is right
-            action = 4 ##NEED TO FIX THIS
-
-            
-            lane_changed = False
-            if  self.prev_lane == "center" and (action == 3 or action == 4): 
-                if abs(self.player_x-int(self.wid / 2)) > 75 and abs(self.player_x-int(self.wid / 2)) < 110:
-                    lane_changed = True
-            elif self.prev_lane == "left":
-                if action == 3:
-                    collision = True
-                elif action == 4 and abs(self.player_x-int(self.wid / 2)) < 15:
-                    lane_changed = True
-                else:
-                    pass
-            elif self.prev_lane == "right":
-                if action == 4:
-                    collision = True
-                elif action == 3 and abs(self.player_x-int(self.wid / 2)) < 15:
-                    lane_changed = True
-                else:
-                    pass
-            else:
-                pass    
-
-            if lane_changed:
-                self.prev_lane = self.get_current_lane()
-                # print(prev_lane) 
-
-            'NEW SCORE'
-            self.score += self.get_reward(collision, lane_changed, None)
-            # print(self.score)
-            if self.score < 0:
+                action = 0
+                arrows = self.get_keyboard()
+                if arrows[pg.K_RIGHT]: #and self.player_x <= 290:
+                    action = 4
+                if arrows[pg.K_LEFT]: # and self.player_x >= 110:
+                    action = 3
+                if arrows[pg.K_UP]:
+                    action = 1
+                if arrows[pg.K_DOWN]:
+                    action = 2            
+                state, reward, done = self.step(action)
+                time.sleep(0.05)
+            if done:
                 break
-
-            pg.display.update()
-            pg.image.save(self.screen, "screenshot.jpeg")
-            img = np.array(Image.open("screenshot.jpeg"))
-            #print(img.shape)
 
         pg.quit()
 
