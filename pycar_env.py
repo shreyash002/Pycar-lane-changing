@@ -68,15 +68,16 @@ class PyCar():
                     pg.image.load('assets/images/sprites/Enemy3_Car.png')]
 
         'MUSIC'
-        pg.mixer_music.load('assets/sounds/music/Chillwave_Nightdrive.mp3')
-        pg.mixer_music.play(-1)
+        # pg.mixer_music.load('assets/sounds/music/Chillwave_Nightdrive.mp3')
+        # pg.mixer_music.play(-1)
 
         'SOUND EFFECT'
-        self.car_collision = pg.mixer.Sound('assets/sounds/sound_effects/Car_Collision.wav')
+        # self.car_collision = pg.mixer.Sound('assets/sounds/sound_effects/Car_Collision.wav')
 
         self.clock = pg.time.Clock()
-        self.score = 1
+        self.score = 0
         self.score_spd = 0
+        self.prev_lane = "center"
 
     def run_game(self, keyboard=True):
         main = True
@@ -101,16 +102,19 @@ class PyCar():
                     main = False
 
             'CONTROLS'
-            arrows = pg.key.get_pressed()
-            if arrows[pg.K_RIGHT] and self.player_x <= 290:
-                self.player_x += self.player_spd
-            if arrows[pg.K_LEFT] and self.player_x >= 110:
-                self.player_x -= self.player_spd
-            if arrows[pg.K_UP] and self.player_y >= int(self.car_y/2) + 50:
-                self.player_y -= self.player_spd
-            if arrows[pg.K_DOWN] and self.player_y <= int(self.hei - 50):
-                self.player_y += self.player_spd
-            
+            if keyboard:
+                arrows = pg.key.get_pressed()
+                if arrows[pg.K_RIGHT] and self.player_x <= 290:
+                    self.player_x += self.player_spd
+                if arrows[pg.K_LEFT] and self.player_x >= 110:
+                    self.player_x -= self.player_spd
+                if arrows[pg.K_UP] and self.player_y >= int(self.car_y/2) + 50:
+                    self.player_y -= self.player_spd
+                if arrows[pg.K_DOWN] and self.player_y <= int(self.hei - 50):
+                    self.player_y += self.player_spd
+            else:
+                pass
+
             'ENEMIES SPEED'
             self.enemy1_y += self.enemies_spd + 5
             self.enemy2_y += self.enemies_spd + 2
@@ -124,32 +128,69 @@ class PyCar():
             if self.enemy3_y > self.hei:
                 self.enemy3_y = randint(-1750, -1250)
 
-            'SCORE'
-            if self.score_spd <= 60:
-                self.score_spd += 1
-            else:
-                self.score += 1
-                self.score_spd = 0
+            # 'SCORE'
+            # if self.score_spd <= 60:
+            #     self.score_spd += 1
+            # else:
+            #     self.score += 1
+            #     self.score_spd = 0
 
             'COLLISION'
+            collision = False
             if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  # Lado direito.
                 print("Enemy 3 collision")
-                self.car_collision.play()
-                self.score -= 10
+                # self.car_collision.play()
+                collision = True
+                # self.score -= 10
                 self.enemy3_y = randint(-1750, -1250)
             if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  # Lado esquerdo.
                 print("Enemy 1 collision")
-                self.car_collision.play()
-                self.score -= 10
+                # self.car_collision.play()
+                collision = True
+                # self.score -= 10
                 self.enemy1_y = randint(-2500, - 2000)
             if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 :  # Centro.
                 print("Enemy 2 collision")
                 #if player_x + 40 > enemies_x - 10 and abs(player_y - enemy2_y) < 50:
-                self.car_collision.play()
-                self.score -= 10
+                # self.car_collision.play()
+                collision = True
+                # self.score -= 10
                 self.enemy2_y = randint(-1000, -750)
+            
+            'LANE'
+            ##action 3 is left and action 4 is right
+            action = 4 ##NEED TO FIX THIS
 
-            if self.score <= 0:
+            
+            lane_changed = False
+            if  self.prev_lane == "center" and (action == 3 or action == 4): 
+                if abs(self.player_x-int(self.wid / 2)) > 75 and abs(self.player_x-int(self.wid / 2)) < 110:
+                    lane_changed = True
+            elif self.prev_lane == "left":
+                if action == 3:
+                    collision = True
+                elif action == 4 and abs(self.player_x-int(self.wid / 2)) < 15:
+                    lane_changed = True
+                else:
+                    pass
+            elif self.prev_lane == "right":
+                if action == 4:
+                    collision = True
+                elif action == 3 and abs(self.player_x-int(self.wid / 2)) < 15:
+                    lane_changed = True
+                else:
+                    pass
+            else:
+                pass    
+
+            if lane_changed:
+                self.prev_lane = self.get_current_lane()
+                # print(prev_lane) 
+
+            'NEW SCORE'
+            self.score += self.get_reward(collision, lane_changed, None)
+            # print(self.score)
+            if self.score < 0:
                 break
 
             pg.display.update()
@@ -158,6 +199,40 @@ class PyCar():
             #print(img.shape)
 
         pg.quit()
+
+    def get_reward(self, collision, lane_changed, rule):
+
+        r_col = -1 if collision else 0
+        r_comp = 1 if lane_changed else 0
+
+        # No rule for now
+        # r_vel = -alpha*np.abs(v_target-v_agent)
+
+        # r_safe = ##TODO
+
+        # if rule == 0:
+        #     r_const = -5
+        # elif rule == 1:
+        #     r_const = -5
+        # else:
+        #     r_const = 0 
+
+        # r_rule = r_vel + r_safe + r_const
+
+        return r_col+r_comp
+    
+    def get_current_lane(self):
+        if abs(self.player_x-int(self.wid / 2))<15:
+            # print(self.player_x-int(self.wid/2))
+            return "center"
+        elif (self.player_x-int(self.wid / 2))<105 and (self.player_x-int(self.wid / 2))>75:
+            return "left"
+        elif (int(self.wid / 2)-self.player_x)<105 and (int(self.wid / 2)-self.player_x)>75:
+            return "right"
+        else:
+            pass
+
+
 
 
 if __name__ == "__main__":

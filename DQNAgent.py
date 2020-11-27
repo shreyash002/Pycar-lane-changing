@@ -1,5 +1,5 @@
 from dqn import weights_init, Initializer, DQN, HuberLoss, ReplayMemory
-from environment import CartPoleEnv
+from pycar_env import PyCar
 from collections import namedtuple
 import torch.nn as nn
 import torch.nn.functional as F
@@ -42,18 +42,18 @@ class DQNAgent:
         self.loss = HuberLoss()
 
         # define optimizer
-        self.optim = torch.optim.RMSprop(self.policy_model.parameters())
+        self.optim = torch.optim.Adam(self.policy_model.parameters())
 
         # define environment
-        self.env = gym.make('CartPole-v0').unwrapped
-        self.cartpole = CartPoleEnv(self.screen_width)
+        self.env = PyCar()#TODO
+        # self.cartpole = PyCar(self.screen_width)
 
         # initialize counter
         self.current_episode = 0
         self.current_iteration = 0
         self.episode_durations = []
 
-        self.batch_size = 256
+        self.batch_size = 32
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -204,14 +204,14 @@ class DQNAgent:
         for episode in tqdm(range(self.current_episode, self.num_episodes)):
             self.current_episode = episode
             # reset environment
-            self.env.reset()
+            self.env.reset_game()
             self.train_one_epoch()
             # The target network has its weights kept frozen most of the time
             if self.current_episode % self.target_update == 0:
                 self.target_model.load_state_dict(self.policy_model.state_dict())
 
-        self.env.render()
-        self.env.close()
+        self.env.render()#TODO
+        self.env.close()#TODO
 
     def train_one_epoch(self):
         """
@@ -219,30 +219,28 @@ class DQNAgent:
         :return:
         """
         episode_duration = 0
-        prev_frame = self.cartpole.get_screen(self.env)
-        curr_frame = self.cartpole.get_screen(self.env)
+
         # get state
-        curr_state = curr_frame - prev_frame
+        curr_state = #TODO
 
         while(1):
             episode_duration += 1
             # select action
             action = self.select_action(curr_state)
             # perform action and get reward
-            _, reward, done, _ = self.env.step(action.item())
+            _, reward, done, _ = self.env.step(action.item())#TODO
 
             if self.cuda:
                 reward = torch.Tensor([reward]).to(self.device)
             else:
                 reward = torch.Tensor([reward]).to(self.device)
 
-            prev_frame = curr_frame
-            curr_frame = self.cartpole.get_screen(self.env)
+ 
             # assign next state
             if done:
                 next_state = None
             else:
-                next_state = curr_frame - prev_frame
+                next_state = self.env.get_() #TODO
 
             # add this transition into memory
             self.memory.push_transition(curr_state, action, next_state, reward)
@@ -254,6 +252,7 @@ class DQNAgent:
             if curr_loss is not None:
                 if self.cuda:
                     curr_loss = curr_loss.cpu()
+                    print(curr_loss)
                 # self.summary_writer.add_scalar("Temporal Difference Loss", curr_loss.detach().numpy(), self.current_iteration)
             # check if done
             if done:

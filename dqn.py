@@ -77,7 +77,7 @@ Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'
 class ReplayMemory(object):
     def __init__(self):
 
-        self.memory_capacity = 10000
+        self.memory_capacity = 40000
         self.capacity = self.memory_capacity
         self.memory = []
         self.position = 0
@@ -134,5 +134,4 @@ class DQN(nn.Module):
         x = self.relu(x)
 
         out = self.linear(x.view(x.size(0), -1))
-
         return out
