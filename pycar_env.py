@@ -127,9 +127,9 @@ class PyCar():
         else:
             pass
 
-        if self.player_x > 290:
+        if self.player_x > 310:
             collision = True
-        elif self.player_x < 110:
+        elif self.player_x < 90:
             collision = True
 
         'ENEMIES SPEED'
@@ -282,7 +282,7 @@ class PyCar():
 
 
 
-if __name__ == "__main__":
-    pc = PyCar()
-    pc.reset_game()
-    pc.run_game()
+# if __name__ == "__main__":
+#     pc = PyCar()
+#     pc.reset_game()
+#     pc.run_game()

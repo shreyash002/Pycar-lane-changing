@@ -101,7 +101,7 @@ class DQN(nn.Module):
         super().__init__()
 
         self.input_channels = 12
-        self.conv_filters = [16, 32, 32] 
+        self.conv_filters = [16, 32, 64, 64] 
         self.num_classes = 5
 
         self.relu = nn.ReLU(inplace=True)
@@ -115,7 +115,10 @@ class DQN(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=self.conv_filters[1], out_channels=self.conv_filters[2], kernel_size=5, stride=2, padding=0, bias=True)
         self.bn3 = nn.BatchNorm2d(self.conv_filters[2])
 
-        self.linear = nn.Linear(3744, self.num_classes)
+        self.conv4 = nn.Conv2d(in_channels=self.conv_filters[2], out_channels=self.conv_filters[3], kernel_size=5, stride=2, padding=0, bias=True)
+        self.bn4 = nn.BatchNorm2d(self.conv_filters[3])
+
+        self.linear = nn.Linear(960, self.num_classes)
 
         self.apply(weights_init)
 
@@ -131,6 +134,10 @@ class DQN(nn.Module):
 
         x = self.conv3(x)
         x = self.bn3(x)
+        x = self.relu(x)
+
+        x = self.conv4(x)
+        x = self.bn4(x)
         x = self.relu(x)
 
         out = self.linear(x.view(x.size(0), -1))

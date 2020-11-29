@@ -42,7 +42,7 @@ class DQNAgent:
         self.loss = HuberLoss()
 
         # define optimizer
-        self.optim = torch.optim.Adam(self.policy_model.parameters())
+        self.optim = torch.optim.Adam(self.policy_model.parameters(), lr=0.01)
 
         # define environment
         self.env = PyCar()#TODO
@@ -119,6 +119,8 @@ class DQNAgent:
         This function will the operator
         :return:
         """
+        self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch300"))
+        self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch300"))
         try:
             self.train()
 
@@ -198,8 +200,8 @@ class DQNAgent:
         :return:
         """
 
-        self.num_episodes = 200
-        self.target_update = 10
+        self.num_episodes = 1000
+        self.target_update = 20
 
         for episode in tqdm(range(self.current_episode, self.num_episodes)):
             self.current_episode = episode
