@@ -46,7 +46,7 @@ class PyCar():
 
         'PLAYER'
         self.player_x, self.player_y = int(self.wid / 2), int(self.hei - 50)
-        self.player_spd = 5
+        self.player_spd = 25
         self.player_spd_x = self.player_spd #85
         self.player_spd_y = self.player_spd #20
 
@@ -66,9 +66,9 @@ class PyCar():
         self.bg = pg.transform.scale(self.bg, (self.wid, self.hei))
         self.bg_y = 0
         self.cars_img = [pg.image.load('assets/images/sprites/Player_Car.png'),
-                    pg.image.load('assets/images/sprites/Enemy1_Car.png'),
                     pg.image.load('assets/images/sprites/Enemy2_Car.png'),
-                    pg.image.load('assets/images/sprites/Enemy3_Car.png')]
+                    pg.image.load('assets/images/sprites/Enemy2_Car.png'),
+                    pg.image.load('assets/images/sprites/Enemy2_Car.png')]
 
         'MUSIC'
         # pg.mixer_music.load('assets/sounds/music/Chillwave_Nightdrive.mp3')
@@ -120,9 +120,9 @@ class PyCar():
             self.player_x += self.player_spd_x
         if action == 3: # and self.player_x >= 110:
             self.player_x -= self.player_spd_x
-        if action == 1 and self.player_y >= int(self.car_y/2) + 50:
+        if action == 2 and self.player_y >= int(self.car_y/2) + 50:
             self.player_y -= self.player_spd_y
-        if action == 0 and self.player_y <= int(self.hei - 50):
+        if action == 1 and self.player_y <= int(self.hei - 50):
             self.player_y += self.player_spd_y
         else:
             pass
@@ -175,12 +175,11 @@ class PyCar():
         
         'LANE'
         ##action 3 is left and action 4 is right
-        action = 4 ##NEED TO FIX THIS
-
+        # action = 4 ##NEED TO FIX THIS
         
         lane_changed = False
         if  self.prev_lane == "center" and (action == 3 or action == 4): 
-            if abs(self.player_x-int(self.wid / 2)) > 75 and abs(self.player_x-int(self.wid / 2)) < 110:
+            if abs(self.player_x-int(self.wid / 2)) > 75 and abs(self.player_x-int(self.wid / 2)) < 120:
                 lane_changed = True
         elif self.prev_lane == "left":
             #if action == 3:
@@ -198,26 +197,35 @@ class PyCar():
                 pass
         else:
             pass    
-
+        
         if lane_changed:
             self.prev_lane = self.get_current_lane()
             # print(prev_lane) 
 
         'NEW SCORE'
-        reward = self.get_reward(collision, lane_changed, None)
+        reward = self.get_reward(collision, lane_changed, self.get_current_lane()==None)
         self.score += reward
         # print(self.score)
         done = False
-        if self.score < 0 or collision:
+        if collision:
             done = True
 
         pg.display.update()
-        pg.image.save(self.screen, "screenshot.jpeg")
-        img = np.array(Image.open("screenshot.jpeg"))
-        #print(img.shape)
-        return img, reward, done
+        # image_data = pg.surfarray.array3d(pg.display.get_surface())
 
+        # pg.image.save(self.screen, "screenshot.jpeg")
+        # img = np.array(Image.open("screenshot.jpeg"))
+        # #print(img.shape)
+        return None, reward, done
 
+    def get_state(self):
+        num_images = 4
+        images=np.zeros((100, 125, 12))
+        for i in range(num_images):
+            pg.display.update()
+            img = Image.fromarray(pg.surfarray.array3d(pg.display.get_surface())).resize(size=(125, 100))
+            images[:, :, 3*i:3*i+3] = np.array(img)
+        return images
 
     def run_game(self, keyboard=True):
         main = True
@@ -243,35 +251,33 @@ class PyCar():
 
     def get_reward(self, collision, lane_changed, rule):
 
-        r_col = -1 if collision else 0
-        r_comp = 1 if lane_changed else 0
+        r_col = -20 if collision else 0
+        r_comp = 0 if lane_changed else 0
 
         # No rule for now
         # r_vel = -alpha*np.abs(v_target-v_agent)
 
         # r_safe = ##TODO
 
-        # if rule == 0:
-        #     r_const = -5
-        # elif rule == 1:
-        #     r_const = -5
-        # else:
-        #     r_const = 0 
+        if rule:
+            r_const = -1
+        else:
+            r_const = 1
 
         # r_rule = r_vel + r_safe + r_const
 
-        return r_col+r_comp
+        return r_col+r_comp + r_const
     
     def get_current_lane(self):
         if abs(self.player_x-int(self.wid / 2))<15:
             # print(self.player_x-int(self.wid/2))
             return "center"
-        elif (self.player_x-int(self.wid / 2))<105 and (self.player_x-int(self.wid / 2))>75:
+        elif (self.player_x-int(self.wid / 2))<120 and (self.player_x-int(self.wid / 2))>65:
             return "left"
-        elif (int(self.wid / 2)-self.player_x)<105 and (int(self.wid / 2)-self.player_x)>75:
+        elif (int(self.wid / 2)-self.player_x)<120 and (int(self.wid / 2)-self.player_x)>65:
             return "right"
         else:
-            pass
+            return None
 
 
 

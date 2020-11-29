@@ -10,7 +10,7 @@ from collections import namedtuple
 import math
 import random
 import shutil
-
+import warnings
 import gym
 from torch.backends import cudnn
 from tqdm import tqdm
@@ -53,7 +53,7 @@ class DQNAgent:
         self.current_iteration = 0
         self.episode_durations = []
 
-        self.batch_size = 32
+        self.batch_size = 200
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -78,6 +78,7 @@ class DQNAgent:
         self.target_model.load_state_dict(self.policy_model.state_dict())
         self.target_model.eval()
 
+        self.savepath = "/home/sk002/Documents/RL-Project/model/"
         # Summary Writer
         # self.summary_writer = SummaryWriter(log_dir=self.config.summary_dir, comment='DQN')
 
@@ -145,14 +146,14 @@ class DQNAgent:
             with torch.no_grad():
                 return self.policy_model(state).max(1)[1].view(1, 1)  # size (1,1)
         else:
-            return torch.tensor([[random.randrange(2)]], device=self.device, dtype=torch.long)
+            return torch.tensor([[random.randrange(5)]], device=self.device, dtype=torch.long)
 
     def optimize_policy_model(self):
         """
         performs a single step of optimization for the policy model
         :return:
         """
-        if self.memory.length() < self.batch_size:
+        if self.memory.length() < 2*self.batch_size:
             return
         # sample a batch
         transitions = self.memory.sample_batch(self.batch_size)
@@ -162,7 +163,6 @@ class DQNAgent:
         # create a mask of non-final states
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, one_batch.next_state)), device=self.device,dtype=torch.uint8)  # [128]
         non_final_next_states = torch.cat([s for s in one_batch.next_state if s is not None])  # [< 128, 3, 40, 80]
-
         # concatenate all batch elements into one
         state_batch = torch.cat(one_batch.state)  # [128, 3, 40, 80]
         action_batch = torch.cat(one_batch.action)  # [128, 1]
@@ -198,7 +198,7 @@ class DQNAgent:
         :return:
         """
 
-        self.num_episodes = 50
+        self.num_episodes = 200
         self.target_update = 10
 
         for episode in tqdm(range(self.current_episode, self.num_episodes)):
@@ -210,8 +210,12 @@ class DQNAgent:
             if self.current_episode % self.target_update == 0:
                 self.target_model.load_state_dict(self.policy_model.state_dict())
 
-        self.env.render()#TODO
-        self.env.close()#TODO
+            if self.current_episode%50 == 0:
+                torch.save(self.policy_model.state_dict(), self.savepath+"policy_epoch"+str(self.current_episode))
+                torch.save(self.target_model.state_dict(), self.savepath+"target_epoch"+str(self.current_episode))
+
+        # self.env.render()#TODO
+        # self.env.close()#TODO
 
     def train_one_epoch(self):
         """
@@ -219,16 +223,17 @@ class DQNAgent:
         :return:
         """
         episode_duration = 0
-
+        # self.env.run_game(True)
         # get state
-        curr_state = #TODO
+        curr_state = torch.Tensor(self.env.get_state()).permute(2, 0, 1).unsqueeze(0)
 
         while(1):
             episode_duration += 1
             # select action
             action = self.select_action(curr_state)
             # perform action and get reward
-            _, reward, done, _ = self.env.step(action.item())#TODO
+            # print(action)
+            _, reward, done = self.env.step(action.item())#TODO
 
             if self.cuda:
                 reward = torch.Tensor([reward]).to(self.device)
@@ -240,7 +245,7 @@ class DQNAgent:
             if done:
                 next_state = None
             else:
-                next_state = self.env.get_() #TODO
+                next_state = torch.Tensor(self.env.get_state()).permute(2, 0, 1).unsqueeze(0) #TODO
 
             # add this transition into memory
             self.memory.push_transition(curr_state, action, next_state, reward)
@@ -252,7 +257,7 @@ class DQNAgent:
             if curr_loss is not None:
                 if self.cuda:
                     curr_loss = curr_loss.cpu()
-                    print(curr_loss)
+                    # print(curr_loss)
                 # self.summary_writer.add_scalar("Temporal Difference Loss", curr_loss.detach().numpy(), self.current_iteration)
             # check if done
             if done:
@@ -277,6 +282,8 @@ class DQNAgent:
 if __name__=="__main__":
 
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+    warnings.filterwarnings("ignore", category=UserWarning)
 
     agent = DQNAgent()
     agent.run()
+    
