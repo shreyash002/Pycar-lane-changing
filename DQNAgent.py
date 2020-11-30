@@ -119,8 +119,8 @@ class DQNAgent:
         This function will the operator
         :return:
         """
-        #self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch300"))
-        #self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch300"))
+        self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch200.pth"))
+        self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch200.pth"))
         try:
             self.train()
 
