@@ -53,7 +53,7 @@ class DQNAgent:
         self.current_iteration = 0
         self.episode_durations = []
 
-        self.batch_size = 200
+        self.batch_size = 250
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -119,13 +119,14 @@ class DQNAgent:
         This function will the operator
         :return:
         """
-        self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch300"))
-        self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch300"))
+        #self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch300"))
+        #self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch300"))
         try:
             self.train()
 
-        except KeyboardInterrupt:
-            self.logger.info("You have entered CTRL+C.. Wait to finalize")
+        except KeyboardInterrupt as e:
+            print(e)
+            #self.logger.info("You have entered CTRL+C.. Wait to finalize")
 
     def select_action(self, state):
         """
@@ -155,7 +156,7 @@ class DQNAgent:
         performs a single step of optimization for the policy model
         :return:
         """
-        if self.memory.length() < 2*self.batch_size:
+        if self.memory.length() < self.batch_size:
             return
         # sample a batch
         transitions = self.memory.sample_batch(self.batch_size)
@@ -213,8 +214,8 @@ class DQNAgent:
                 self.target_model.load_state_dict(self.policy_model.state_dict())
 
             if self.current_episode%50 == 0:
-                torch.save(self.policy_model.state_dict(), self.savepath+"policy_epoch"+str(self.current_episode))
-                torch.save(self.target_model.state_dict(), self.savepath+"target_epoch"+str(self.current_episode))
+                torch.save(self.policy_model.state_dict(), self.savepath+"policy_epoch"+str(self.current_episode)+".pth")
+                torch.save(self.target_model.state_dict(), self.savepath+"target_epoch"+str(self.current_episode)+".pth")
 
         # self.env.render()#TODO
         # self.env.close()#TODO
@@ -235,7 +236,7 @@ class DQNAgent:
             action = self.select_action(curr_state)
             # perform action and get reward
             # print(action)
-            _, reward, done = self.env.step(action.item())#TODO
+            images, reward, done,score = self.env.step(action.item())#TODO
 
             if self.cuda:
                 reward = torch.Tensor([reward]).to(self.device)
@@ -247,7 +248,7 @@ class DQNAgent:
             if done:
                 next_state = None
             else:
-                next_state = torch.Tensor(self.env.get_state()).permute(2, 0, 1).unsqueeze(0) #TODO
+                next_state = torch.Tensor(images).permute(2, 0, 1).unsqueeze(0) #TODO
 
             # add this transition into memory
             self.memory.push_transition(curr_state, action, next_state, reward)
@@ -263,6 +264,7 @@ class DQNAgent:
                 # self.summary_writer.add_scalar("Temporal Difference Loss", curr_loss.detach().numpy(), self.current_iteration)
             # check if done
             if done:
+                print(score)
                 break
 
         # self.summary_writer.add_scalar("Training Episode Duration", episode_duration, self.current_episode)

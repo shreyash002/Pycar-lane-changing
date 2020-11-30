@@ -59,13 +59,18 @@ class PyCar():
         self.enemy1_y = randint(-self.hei, -self.car_y)  # Posição do carro vermelho (lado esquerdo).
         self.enemy2_y = randint(-self.hei, -self.car_y)  # Posição do carro amarelo (lado direito).
         self.enemy3_y = randint(-self.hei, -self.car_y)  # Posição do carro azul (centro).
+
+        self.pass_1 = False
+        self.pass_2 = False
+        self.pass_3 = False
+
         self.enemies_spd = 0
 
         'IMAGES'
         self.bg = pg.image.load('assets/images/background/Road.png').convert()
         self.bg = pg.transform.scale(self.bg, (self.wid, self.hei))
         self.bg_y = 0
-        self.cars_img = [pg.image.load('assets/images/sprites/Player_Car.png'),
+        self.cars_img = [pg.image.load('assets/images/sprites/Enemy1_Car.png'),
                     pg.image.load('assets/images/sprites/Enemy2_Car.png'),
                     pg.image.load('assets/images/sprites/Enemy2_Car.png'),
                     pg.image.load('assets/images/sprites/Enemy2_Car.png')]
@@ -81,6 +86,8 @@ class PyCar():
         self.score = 0
         self.score_spd = 0
         self.prev_lane = "center"
+        self.image = []
+        self.counter =0
 
     def get_keyboard(self):
         return pg.key.get_pressed()
@@ -137,13 +144,20 @@ class PyCar():
         self.enemy2_y += self.enemies_spd + 2
         self.enemy3_y += self.enemies_spd + 4
 
+        passing = False
         # --- Os inimigos aparecem, aleatoriamente, fora do background após sair do mesmo --- #
         if self.enemy1_y > self.hei:
-            self.enemy1_y = randint(-2500, - 2000)
+            self.enemy1_y = randint(-1000, - 500)
+            #passing = True
+            self.pass_1 = False
         if self.enemy2_y > self.hei:
-            self.enemy2_y = randint(-1000, -750)
+            self.enemy2_y = randint(-1000, -500)
+            #passing = True
+            self.pass_2 = False
         if self.enemy3_y > self.hei:
-            self.enemy3_y = randint(-1750, -1250)
+            self.enemy3_y = randint(-1000, -500)
+            #passing = True
+            self.pass_3 = False
 
         # 'SCORE'
         # if self.score_spd <= 60:
@@ -151,6 +165,22 @@ class PyCar():
         # else:
         #     self.score += 1
         #     self.score_spd = 0
+        passing = False
+        if not self.pass_1:
+            if self.player_y < self.enemy1_y - int(self.car_y/2) - 5:
+                self.pass_1 = True
+                passing = True
+        
+        if not self.pass_2:
+            if self.player_y < self.enemy2_y - int(self.car_y/2) - 5:
+                self.pass_2 = True
+                passing = True
+        
+        if not self.pass_3:
+            if self.player_y < self.enemy3_y - int(self.car_y/2) - 5:
+                self.pass_3 = True
+                passing = True
+        
 
         'COLLISION'
         if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  # Lado direito.
@@ -158,21 +188,25 @@ class PyCar():
             # self.car_collision.play()
             collision = True
             # self.score -= 10
-            self.enemy3_y = randint(-1750, -1250)
+            self.enemy3_y = randint(-1000, -500)
+            self.pass_1 = False
+
         if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  # Lado esquerdo.
             print("Enemy 1 collision")
             # self.car_collision.play()
             collision = True
             # self.score -= 10
-            self.enemy1_y = randint(-2500, - 2000)
+            self.enemy1_y = randint(-1000, - 500)
+            self.pass_2 = False
+
         if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 :  # Centro.
             print("Enemy 2 collision")
             #if player_x + 40 > enemies_x - 10 and abs(player_y - enemy2_y) < 50:
             # self.car_collision.play()
             collision = True
             # self.score -= 10
-            self.enemy2_y = randint(-1000, -750)
-        
+            self.enemy2_y = randint(-1000, -500)
+            self.pass_3 = False        
         'LANE'
         ##action 3 is left and action 4 is right
         # action = 4 ##NEED TO FIX THIS
@@ -203,7 +237,10 @@ class PyCar():
             # print(prev_lane) 
 
         'NEW SCORE'
-        reward = self.get_reward(collision, lane_changed, self.get_current_lane()==None)
+        reward = self.get_reward(collision, lane_changed, self.get_current_lane()==None, passing)
+        if action>0:
+            reward -= 0.25
+
         self.score += reward
         # print(self.score)
         done = False
@@ -211,14 +248,34 @@ class PyCar():
             done = True
 
         pg.display.update()
+
+        self.counter += 1
+
+        if self.counter % 4 ==0:
+            self.image.append(Image.fromarray(pg.surfarray.array3d(pg.display.get_surface())).resize(size=(125, 100)))
+        if len(self.image) == 5:
+            self.image.pop(0)
+        elif len(self.image) > 5:
+            print("ISSUUEEE")
+
+
+        num_images = 4
+        images=np.zeros((100, 125, 12))
+        for i in range(num_images):
+            img_n = len(self.image) - i - 1
+            if img_n < 0:
+                img_n = 0
+            images[:, :, 3*i:3*(i+1)] = np.array(self.image[img_n])
+
         # image_data = pg.surfarray.array3d(pg.display.get_surface())
 
         # pg.image.save(self.screen, "screenshot.jpeg")
         # img = np.array(Image.open("screenshot.jpeg"))
         # #print(img.shape)
-        return None, reward, done
+        return images, reward, done, self.score
 
     def get_state(self):
+        self.image.append(Image.fromarray(pg.surfarray.array3d(pg.display.get_surface())).resize(size=(125, 100)))
         num_images = 4
         images=np.zeros((100, 125, 12))
         for i in range(num_images):
@@ -249,7 +306,7 @@ class PyCar():
 
         pg.quit()
 
-    def get_reward(self, collision, lane_changed, rule):
+    def get_reward(self, collision, lane_changed, rule, passing):
 
         r_col = -20 if collision else 0
         r_comp = 0 if lane_changed else 0
@@ -258,6 +315,10 @@ class PyCar():
         # r_vel = -alpha*np.abs(v_target-v_agent)
 
         # r_safe = ##TODO
+        if passing:
+            r_pass = 25
+        else:
+            r_pass = 0
 
         if rule:
             r_const = -1
@@ -266,7 +327,7 @@ class PyCar():
 
         # r_rule = r_vel + r_safe + r_const
 
-        return r_col+r_comp + r_const
+        return r_col+r_comp + r_const + r_pass
     
     def get_current_lane(self):
         if abs(self.player_x-int(self.wid / 2))<15:
