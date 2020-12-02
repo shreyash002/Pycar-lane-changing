@@ -102,7 +102,7 @@ class PyCar():
         
         collision = False
 
-        self.clock.tick(60)
+        self.clock.tick(80)
         # bg_y = 0
         # --- Faz com que a imagem de background se repita, deslizando de cima para baixo --- #
         bg_y1 = self.bg_y % self.bg.get_height()
@@ -296,10 +296,10 @@ class PyCar():
                 if arrows[pg.K_LEFT]: # and self.player_x >= 110:
                     action = 3
                 if arrows[pg.K_UP]:
-                    action = 1
+                    action = 2
                 if arrows[pg.K_DOWN]:
-                    action = 2            
-                state, reward, done = self.step(action)
+                    action = 1            
+                state, reward, done, _ = self.step(action)
                 time.sleep(0.05)
             if done:
                 break
@@ -321,7 +321,7 @@ class PyCar():
             r_pass = 0
 
         if rule:
-            r_const = -1
+            r_const = 0
         else:
             r_const = 1
 
@@ -343,7 +343,9 @@ class PyCar():
 
 
 
-# if __name__ == "__main__":
-#     pc = PyCar()
-#     pc.reset_game()
-#     pc.run_game()
+if __name__ == "__main__":
+    pc = PyCar()
+    while True:
+        pc.reset_game()
+        pc.get_state()
+        pc.run_game()

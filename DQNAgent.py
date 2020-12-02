@@ -16,7 +16,7 @@ from torch.backends import cudnn
 from tqdm import tqdm
 
 import logging
-
+import time
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
@@ -25,7 +25,7 @@ class DQNAgent:
 
     def __init__(self):
         # self.config = config
-        self.gamma = 0.8
+        self.gamma = 0.6
 
         # self.logger = logging.getLogger("DQNAgent")
 
@@ -119,8 +119,8 @@ class DQNAgent:
         This function will the operator
         :return:
         """
-        self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch200.pth"))
-        self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch200.pth"))
+        # self.policy_model.load_state_dict(torch.load(self.savepath+"policy_epoch250.pth"))
+        # self.target_model.load_state_dict(torch.load(self.savepath+"target_epoch250.pth"))
         try:
             self.train()
 
@@ -202,7 +202,7 @@ class DQNAgent:
         """
 
         self.num_episodes = 1000
-        self.target_update = 20
+        self.target_update = 5
 
         for episode in tqdm(range(self.current_episode, self.num_episodes)):
             self.current_episode = episode
@@ -231,6 +231,8 @@ class DQNAgent:
         curr_state = torch.Tensor(self.env.get_state()).permute(2, 0, 1).unsqueeze(0)
 
         while(1):
+            # time.sleep(0.1)
+
             episode_duration += 1
             # select action
             action = self.select_action(curr_state)
