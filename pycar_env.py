@@ -238,8 +238,8 @@ class PyCar():
 
         'NEW SCORE'
         reward = self.get_reward(collision, lane_changed, self.get_current_lane()==None, passing)
-        if action>0:
-            reward -= 0.25
+        # if action>0:
+        #     reward -= 0.25
 
         self.score += reward
         # print(self.score)
@@ -308,7 +308,7 @@ class PyCar():
 
     def get_reward(self, collision, lane_changed, rule, passing):
 
-        r_col = -20 if collision else 0
+        r_col = -10 if collision else 0
         r_comp = 0 if lane_changed else 0
 
         # No rule for now
@@ -316,7 +316,7 @@ class PyCar():
 
         # r_safe = ##TODO
         if passing:
-            r_pass = 25
+            r_pass = 3
         else:
             r_pass = 0
 

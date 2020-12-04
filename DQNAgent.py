@@ -25,7 +25,7 @@ class DQNAgent:
 
     def __init__(self):
         # self.config = config
-        self.gamma = 0.6
+        self.gamma = 0.4
 
         # self.logger = logging.getLogger("DQNAgent")
 
@@ -135,7 +135,7 @@ class DQNAgent:
         :return:
         """
 
-        self.eps_start = 0.9
+        self.eps_start = 0.95
         self.eps_end = 0.05
         self.eps_decay = 200
 
@@ -151,6 +151,18 @@ class DQNAgent:
         else:
             return torch.tensor([[random.randrange(5)]], device=self.device, dtype=torch.long)
 
+    def select_action(self, state):
+        """
+        The action selection function, it either uses the model to choose an action or samples one uniformly.
+        :param state: current state of the model
+        :return:
+        """
+
+        if self.cuda:
+            state = state.cuda()
+        with torch.no_grad():
+            return self.policy_model(state).max(1)[1].view(1, 1)  # size (1,1)
+     
     def optimize_policy_model(self):
         """
         performs a single step of optimization for the policy model
@@ -272,7 +284,38 @@ class DQNAgent:
         # self.summary_writer.add_scalar("Training Episode Duration", episode_duration, self.current_episode)
 
     def validate(self):
-        pass
+        
+        curr_state = torch.Tensor(self.env.get_state()).permute(2, 0, 1).unsqueeze(0)
+
+        while(1):
+            # time.sleep(0.1)
+
+            episode_duration += 1
+            # select action
+            action = self.get_action(curr_state)
+            # perform action and get reward
+            # print(action)
+            images, reward, done,score = self.env.step(action.item())#TODO
+
+            if self.cuda:
+                reward = torch.Tensor([reward]).to(self.device)
+            else:
+                reward = torch.Tensor([reward]).to(self.device)
+
+ 
+            # assign next state
+            if done:
+                next_state = None
+            else:
+                next_state = torch.Tensor(images).permute(2, 0, 1).unsqueeze(0) #TODO
+
+            curr_state = next_state
+            
+            if done:
+                print(score)
+                break
+
+        # pass
 
     def finalize(self):
         """
