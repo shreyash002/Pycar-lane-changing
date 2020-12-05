@@ -1,3 +1,5 @@
+import os
+os.environ["SDL_VIDEODRIVER"] = "dummy"
 import pygame as pg
 from random import randint
 import PIL.Image as Image
