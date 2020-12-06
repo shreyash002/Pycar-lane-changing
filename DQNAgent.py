@@ -136,22 +136,25 @@ class DQNAgent:
         """
 
         self.eps_start = 0.95
-        self.eps_end = 0.05
-        self.eps_decay = 200
+        self.eps_end = 0.65
+        self.eps_decay = 2000
 
         if self.cuda:
             state = state.cuda()
         sample = random.random()
-        eps_threshold = self.eps_start + (self.eps_start - self.eps_end) * math.exp(
+        eps_threshold = self.eps_start - (self.eps_start - self.eps_end) * math.exp(
             -1. * self.current_iteration / self.eps_decay)
         self.current_iteration += 1
-        if sample > eps_threshold:
+        print("Eps thresh: ", eps_threshold)
+        if sample < eps_threshold:
+            # print("Model step")
             with torch.no_grad():
                 return self.policy_model(state).max(1)[1].view(1, 1)  # size (1,1)
         else:
+            # print("Random step")
             return torch.tensor([[random.randrange(5)]], device=self.device, dtype=torch.long)
 
-    def select_action(self, state):
+    def get_action(self, state):
         """
         The action selection function, it either uses the model to choose an action or samples one uniformly.
         :param state: current state of the model
