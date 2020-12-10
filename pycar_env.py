@@ -58,10 +58,9 @@ class PyCar():
         self.enemy2_x = int(self.wid / 2) 
         self.enemy3_x = int(self.wid / 2) + 80
 
-        self.enemy1_y = randint(-self.hei, -self.car_y)  # Posição do carro vermelho (lado esquerdo).
-        self.enemy2_y = randint(-self.hei, -self.car_y)  # Posição do carro amarelo (lado direito).
-        self.enemy3_y = randint(-self.hei, -self.car_y)  # Posição do carro azul (centro).
-
+        self.enemy1_y = randint(-self.hei, -self.car_y)  
+        self.enemy2_y = randint(-self.hei, -self.car_y)  
+        self.enemy3_y = randint(-self.hei, -self.car_y)  
         self.pass_1 = False
         self.pass_2 = False
         self.pass_3 = False
@@ -105,8 +104,7 @@ class PyCar():
         collision = False
 
         self.clock.tick(80)
-        # bg_y = 0
-        # --- Faz com que a imagem de background se repita, deslizando de cima para baixo --- #
+
         bg_y1 = self.bg_y % self.bg.get_height()
         self.bg_y += 3
         self.screen.blit(self.bg, (0, bg_y1 - self.bg.get_height()))
@@ -147,7 +145,7 @@ class PyCar():
         self.enemy3_y += self.enemies_spd + 4
 
         passing = False
-        # --- Os inimigos aparecem, aleatoriamente, fora do background após sair do mesmo --- #
+
         if self.enemy1_y > self.hei:
             self.enemy1_y = randint(-1000, - 500)
             #passing = True
@@ -161,12 +159,6 @@ class PyCar():
             #passing = True
             self.pass_3 = False
 
-        # 'SCORE'
-        # if self.score_spd <= 60:
-        #     self.score_spd += 1
-        # else:
-        #     self.score += 1
-        #     self.score_spd = 0
         passing = False
         if not self.pass_1:
             if self.player_y < self.enemy1_y - int(self.car_y/2) - 5:
@@ -185,24 +177,24 @@ class PyCar():
         
 
         'COLLISION'
-        if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  # Lado direito.
-            print("Enemy 3 collision")
+        if abs(self.player_x - self.enemy3_x ) < self.car_x  and abs(self.player_y - self.enemy3_y) < self.car_y + 5:  
+            # print("Enemy 3 collision")
             # self.car_collision.play()
             collision = True
             # self.score -= 10
             self.enemy3_y = randint(-1000, -500)
             self.pass_1 = False
 
-        if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  # Lado esquerdo.
-            print("Enemy 1 collision")
+        if  abs(self.player_x - self.enemy1_x ) < self.car_x  and abs(self.player_y - self.enemy1_y) < self.car_y + 5 :  
+            # print("Enemy 1 collision")
             # self.car_collision.play()
             collision = True
             # self.score -= 10
             self.enemy1_y = randint(-1000, - 500)
             self.pass_2 = False
 
-        if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 :  # Centro.
-            print("Enemy 2 collision")
+        if abs(self.player_x - self.enemy2_x ) < self.car_x  and abs(self.player_y - self.enemy2_y) < self.car_y + 5 : 
+            # print("Enemy 2 collision")
             #if player_x + 40 > enemies_x - 10 and abs(player_y - enemy2_y) < 50:
             # self.car_collision.play()
             collision = True

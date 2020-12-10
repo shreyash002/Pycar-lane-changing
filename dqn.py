@@ -4,20 +4,6 @@ import torch
 import random
 from collections import namedtuple
 
-import math
-import random
-import shutil
-
-import gym
-from torch.backends import cudnn
-from tqdm import tqdm
-
-import logging
-
-import torchvision.transforms as transforms
-from PIL import Image
-import numpy as np
-
 # custom weights initialization
 def weights_init(m):
 
@@ -29,7 +15,6 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
-# TODO revise it and put the exact exception to handle
 class Initializer:
     def __init__(self):
         pass
